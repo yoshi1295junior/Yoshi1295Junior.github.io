@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Upload Manager</title>
+  <link rel="icon" type="image/x-icon" href="favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Ubuntu:ital,wght@0,300;0,400;0,500;0,700;1,300;1,400;1,500;1,700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #131313;
+      --panel: rgba(255, 255, 255, 0.06);
+      --panel-border: #363636;
+      --text: #ffffff;
+      --muted: rgba(245, 247, 255, 0.7);
+      --accent: #519837;
+      --accent-strong: #44812d;
+      --danger: #fb7185;
+      --ok: #4ade80;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Inter", sans-serif;
+      color: var(--text);
+      background:
+        linear-gradient(180deg, #04060b 0%, #070b14 100%);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.7), transparent 90%);
+    }
+
+    .shell {
+      position: relative;
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 32px 20px 60px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 3.8rem);
+      line-height: 0.95;
+      letter-spacing: -0.05em;
+      font-family: "Ubuntu", sans-serif;
+    }
+
+    .intro {
+      max-width: 72ch;
+      margin: 0;
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.7;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .panel {
+      border: 1px solid var(--panel-border);
+      border-radius: 24px;
+      background: var(--panel);
+      backdrop-filter: blur(16px);
+      padding: 22px;
+    }
+
+    .panel h2 {
+      margin: 0 0 10px;
+      font-size: 1.15rem;
+    }
+
+    .panel p {
+      margin: 0 0 18px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .form {
+      display: grid;
+      gap: 16px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    .field label {
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .field input,
+    .field button {
+      font: inherit;
+    }
+
+    .field input {
+      width: 100%;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 14px;
+      padding: 13px 14px;
+      background: rgba(0, 0, 0, 0.24);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .field input:focus {
+      border-color: #519837;
+      box-shadow: 0 0 0 4px #44812d;
+    }
+
+    .field input[type="file"] {
+      padding: 11px 12px;
+    }
+
+    .help {
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-top: 6px;
+    }
+
+    .actions button {
+      border: 0;
+      border-radius: 14px;
+      padding: 13px 18px;
+      background: linear-gradient(-90deg, var(--accent-strong), var(--accent));
+      color: #feffff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s ease, filter 0.2s ease;
+    }
+
+    .actions button:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+    }
+
+    .actions button:disabled {
+      cursor: wait;
+      opacity: 0.7;
+      transform: none;
+    }
+
+    .ghost {
+      color: var(--text);
+      text-decoration: none;
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      padding: 13px 18px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .summary {
+      display: grid;
+      gap: 12px;
+    }
+
+    .summary-card {
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 18px;
+      background: rgba(0, 0, 0, 0.18);
+      padding: 16px;
+    }
+
+    .summary-card strong {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    code {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #dbeafe;
+      word-break: break-all;
+    }
+
+    .status {
+      min-height: 56px;
+      padding: 14px 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(0, 0, 0, 0.2);
+      color: var(--muted);
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .status.success {
+      border-color: rgba(74, 222, 128, 0.4);
+      color: #d1fae5;
+    }
+
+    .status.error {
+      border-color: rgba(251, 113, 133, 0.4);
+      color: #ffe4e6;
+    }
+
+    .note {
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+
+    .modes {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      padding: 5px;
+      margin-bottom: 18px;
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      background: rgba(0, 0, 0, 0.24);
+    }
+
+    .modes input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .modes label {
+      text-align: center;
+      padding: 11px 8px;
+      border-radius: 11px;
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--muted);
+      transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    .modes input:checked + label {
+      background: linear-gradient(-90deg, var(--accent-strong), var(--accent));
+      color: #feffff;
+    }
+
+    .modes input[value="remove"]:checked + label {
+      background: linear-gradient(-90deg, #be3a4f, var(--danger));
+    }
+
+    .modes input[value="change"]:checked + label {
+      background: linear-gradient(-90deg, #d9a400, #f5c518);
+      color: #1a1400;
+    }
+
+    .form[data-mode="change"] {
+      --accent: #f5c518;
+      --accent-strong: #d9a400;
+    }
+
+    .form[data-mode="change"] .field input:focus {
+      border-color: #f5c518;
+      box-shadow: 0 0 0 4px rgba(245, 197, 24, 0.3);
+    }
+
+    .form[data-mode="change"] .actions button {
+      color: #1a1400;
+    }
+
+    .form[data-mode="change"] .combo-item:hover,
+    .form[data-mode="change"] .combo-item.active {
+      background: rgba(245, 197, 24, 0.2);
+    }
+
+    .modes input:focus-visible + label {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .form[data-mode="add"] [data-only]:not([data-only~="add"]),
+    .form[data-mode="change"] [data-only]:not([data-only~="change"]),
+    .form[data-mode="remove"] [data-only]:not([data-only~="remove"]) {
+      display: none;
+    }
+
+    .combo {
+      position: relative;
+    }
+
+    .combo-list {
+      display: none;
+      position: absolute;
+      z-index: 5;
+      left: 0;
+      right: 0;
+      top: calc(100% + 6px);
+      max-height: 280px;
+      overflow-y: auto;
+      padding: 6px;
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      background: #101010;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .combo.open .combo-list {
+      display: block;
+    }
+
+    .combo-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 9px 10px;
+      border-radius: 9px;
+      cursor: pointer;
+    }
+
+    .combo-item small {
+      max-width: 50%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--muted);
+    }
+
+    .combo-item:hover,
+    .combo-item.active {
+      background: rgba(81, 152, 55, 0.25);
+    }
+
+    .combo-empty {
+      padding: 10px;
+      color: var(--muted);
+    }
+
+    .picked {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      background: rgba(0, 0, 0, 0.18);
+    }
+
+    .picked[hidden] {
+      display: none;
+    }
+
+    .picked img {
+      width: 64px;
+      height: 64px;
+      border-radius: 12px;
+      object-fit: cover;
+      background: #000;
+    }
+
+    .picked div {
+      min-width: 0;
+    }
+
+    .picked strong,
+    .picked small {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .picked small {
+      color: var(--muted);
+    }
+
+    .link-button {
+      border: 0;
+      padding: 0;
+      background: none;
+      color: var(--accent);
+      font: inherit;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    .check {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.92rem;
+      line-height: 1.5;
+    }
+
+    .check input {
+      margin-top: 4px;
+      accent-color: var(--accent);
+    }
+
+    .actions button.danger {
+      background: linear-gradient(-90deg, #be3a4f, var(--danger));
+    }
+
+    @media (max-width: 900px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <section class="hero">
+      <div class="eyebrow"></div>
+      <p class="intro">
+      </p>
+      <div class="toolbar">
+      </div>
+    </section>
+
+    <div class="grid">
+      <section class="panel">
+        <h2 id="panelTitle">Add Game</h2>
+
+        <div class="modes" role="radiogroup" aria-label="What do you want to do?">
+          <input type="radio" name="mode" id="modeAdd" value="add" checked>
+          <label for="modeAdd">Add</label>
+          <input type="radio" name="mode" id="modeChange" value="change">
+          <label for="modeChange">Change</label>
+          <input type="radio" name="mode" id="modeRemove" value="remove">
+          <label for="modeRemove">Remove</label>
+        </div>
+
+        <p id="panelDesc">Fill in the name, pick the game HTML file or a link, and choose a thumbnail image. The tool will create the matching files and update <code>index.html</code>.</p>
+
+        <form id="gameForm" class="form" data-mode="add" novalidate>
+          <div class="row">
+            <div class="field">
+              <label for="owner">GitHub Owner</label>
+              <input id="owner" name="owner" type="text" value="YoshiJunior" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="repo">Repository</label>
+              <input id="repo" name="repo" type="text" value="YoshiJunior.github.io" autocomplete="off">
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <label for="branch">Branch</label>
+              <input id="branch" name="branch" type="text" value="main" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="token">GitHub Token</label>
+              <input id="token" name="token" type="password" placeholder="Fine-grained token with Contents write access">
+            </div>
+          </div>
+
+          <div class="field" data-only="change remove">
+            <label for="gameSearch">Game</label>
+            <div class="combo" id="combo">
+              <input id="gameSearch" type="text" role="combobox" aria-expanded="false" aria-controls="comboList" placeholder="Search games..." autocomplete="off">
+              <div class="combo-list" id="comboList" role="listbox"></div>
+            </div>
+            <div class="help"><span id="listCount">Enter your token to load the games.</span> <button type="button" class="link-button" id="refreshBtn">Reload list</button></div>
+          </div>
+
+          <div class="picked" id="picked" hidden data-only="change remove">
+            <img id="pickedImg" alt="">
+            <div>
+              <strong id="pickedTitle"></strong>
+              <small id="pickedUrl"></small>
+            </div>
+          </div>
+
+          <div class="field" data-only="add change">
+            <label for="gameName" id="gameNameLabel">Game Name</label>
+            <input id="gameName" name="gameName" type="text" placeholder="Ex: My Cool Game">
+          </div>
+
+          <div class="field" data-only="add change">
+            <label for="htmlFile">Game HTML File</label>
+            <input id="htmlFile" name="htmlFile" type="file" accept=".html,text/html">
+            <div class="help">Upload your own HTML file if you already built one. Leave this blank when using a link below.</div>
+          </div>
+
+          <div class="field" data-only="add change">
+            <label for="gameLink">Or Game Link</label>
+            <input id="gameLink" name="gameLink" type="url" placeholder="https://example.com/game/" autocomplete="off">
+            <div class="help">Paste a game URL and the uploader will generate a matching HTML wrapper in the same style as the site’s other iframe games.</div>
+            <div class="help" data-only="change">When changing a game, leave the file and link blank to keep the current one.</div>
+          </div>
+
+          <div class="field" data-only="add change">
+            <label for="imageFile">Game Image</label>
+            <input id="imageFile" name="imageFile" type="file" accept="image/*">
+            <div class="help">Upload a JPG, PNG, WEBP, AVIF, or GIF thumbnail, or use the URL field below instead.</div>
+          </div>
+
+          <div class="field" data-only="add change">
+            <label for="imageUrl">Or Image URL</label>
+            <input id="imageUrl" name="imageUrl" type="url" placeholder="https://example.com/image.jpg" autocomplete="off">
+            <div class="help">If you paste a URL here, the page will use it for the card image and skip uploading a local image file. When changing a game, leave the image fields blank to keep the current image.</div>
+          </div>
+
+          <label class="check" data-only="remove">
+            <input type="checkbox" id="deleteFiles" checked>
+            <span>Also delete the game’s HTML file and image from the repo (only files in <code>games/</code> and <code>images/</code> that no other game uses).</span>
+          </label>
+
+          <div class="actions">
+            <button id="submitButton" type="submit">Upload to GitHub</button>
+            <a class="ghost" href="index.html">Cancel</a>
+          </div>
+        </form>
+      </section>
+
+      <aside class="panel">
+        <h2 id="asideTitle">What gets added:</h2>
+        <div class="summary">
+          <div class="summary-card">
+            <strong>Game file</strong>
+            <div><code id="htmlPathPreview">games/new-game.html</code></div>
+          </div>
+          <div class="summary-card">
+            <strong>Image source</strong>
+            <div><code id="imagePathPreview">images/new-game.png</code></div>
+          </div>
+          <div class="summary-card">
+            <strong>Homepage card</strong>
+            <div><code>index.html</code></div>
+          </div>
+        </div>
+
+        <div style="margin-top: 18px;">
+          <div class="help">The token is never stored by this page. It is used only in your browser to call the GitHub API.</div>
+        </div>
+      </aside>
+    </div>
+
+    <section class="panel" style="margin-top: 20px;">
+      <h2>Status</h2>
+      <div id="status" class="status">Waiting for a game name and files.</div>
+      <p class="note" style="margin-top: 14px;">
+      </p>
+    </section>
+  </div>
+
+  <script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const form = $('gameForm');
+  const statusEl = $('status');
+  const submitBtn = $('submitButton');
+
+  let mode = 'add';
+  let games = [];
+  let selected = null;
+
+  /* ---------- helpers ---------- */
+  const slugify = (s) =>
+    (s || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  const esc = (s) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const unesc = (s) => s.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+  const isExternal = (u) => /^https?:\/\//i.test(u);
+  const isLocalGame = (u) => u.startsWith('games/');
+  const isLocalImage = (u) => u.startsWith('images/');
+  const ext = (name) => (name.match(/\.[^.]+$/) || ['.png'])[0].toLowerCase();
+  const normalizeLink = (v) => {
+    const t = (v || '').trim();
+    if (!t) return '';
+    return /^[a-z][a-z0-9+.-]*:\/\//i.test(t) || t.startsWith('/') || t.startsWith('.') ? t : `https://${t}`;
+  };
+
+  const bytesToB64 = (bytes) => {
+    let s = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+    return btoa(s);
+  };
+  const textToB64 = (t) => bytesToB64(new TextEncoder().encode(t));
+  const b64ToText = (b) => new TextDecoder().decode(Uint8Array.from(atob(b.replace(/\s/g, '')), (c) => c.charCodeAt(0)));
+  const fileToB64 = async (f) => bytesToB64(new Uint8Array(await f.arrayBuffer()));
+
+  function setStatus(text, kind) {
+    statusEl.textContent = text;
+    statusEl.className = 'status' + (kind ? ' ' + kind : '');
+  }
+
+  const cfg = () => ({
+    owner: $('owner').value.trim(),
+    repo: $('repo').value.trim(),
+    branch: $('branch').value.trim() || 'main',
+    token: $('token').value.trim(),
+  });
+
+  /* ---------- GitHub API ---------- */
+  async function gh(path, opts = {}) {
+    const c = cfg();
+    const url = `https://api.github.com/repos/${c.owner}/${c.repo}/${path}`;
+    const auths = c.token ? [`Bearer ${c.token}`, `token ${c.token}`] : [null];
+    let last = null;
+    for (const auth of auths) {
+      const headers = { Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
+      if (auth) headers.Authorization = auth;
+      if (opts.body) headers['Content-Type'] = 'application/json';
+      const res = await fetch(url, { method: opts.method, body: opts.body, headers });
+      if (res.status === 404 && opts.allow404) return null;
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) return data;
+      const detail = (data && data.message) || res.statusText;
+      last = new Error(`${res.status} ${detail}`);
+      if (res.status !== 401 && res.status !== 403 && !/bad credentials/i.test(detail)) throw last;
+    }
+    throw new Error(
+      `${last.message}\n` +
+      'If this is a fine-grained token, make sure it has access to this repository and Contents: Read and write.\n' +
+      'If this is a classic token, make sure it is a GitHub PAT and has the repo scope.'
+    );
+  }
+
+  const getFile = (path) => gh(`contents/${encodeURI(path)}?ref=${encodeURIComponent(cfg().branch)}`, { allow404: true });
+
+  async function putFile(path, b64, message, sha) {
+    if (sha === undefined) sha = (await getFile(path))?.sha;
+    return gh(`contents/${encodeURI(path)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ message, content: b64, branch: cfg().branch, ...(sha ? { sha } : {}) }),
+    });
+  }
+
+  async function removeFile(path, message, log) {
+    const f = await getFile(path);
+    if (!f) return log(`${path} was already gone.`);
+    await gh(`contents/${encodeURI(path)}`, {
+      method: 'DELETE',
+      body: JSON.stringify({ message, sha: f.sha, branch: cfg().branch }),
+    });
+    log(`Deleted ${path}.`);
+  }
+
+  async function fetchIndex() {
+    const f = await getFile('index.html');
+    if (!f) throw new Error('index.html was not found on this branch.');
+    return { sha: f.sha, text: b64ToText(f.content) };
+  }
+
+  /* ---------- index.html cards ---------- */
+  const CARD_RE = /<div class="game-card"[^>]*>\s*<img[^>]*>\s*<div class="game-info">\s*<h3>[\s\S]*?<\/h3>\s*<\/div>\s*<\/div>/g;
+
+  function parseCards(html) {
+    return [...html.matchAll(CARD_RE)].map((m) => {
+      const b = m[0];
+      return {
+        block: b,
+        index: m.index,
+        url: unesc((b.match(/data-url="([^"]*)"/) || [])[1] || ''),
+        img: unesc((b.match(/<img[^>]*?\ssrc="([^"]*)"/) || [])[1] || ''),
+        title: unesc((b.match(/<h3>([\s\S]*?)<\/h3>/) || [])[1] || '').trim(),
+      };
+    });
+  }
+
+  const buildCard = (title, url, img) =>
+    `<div class="game-card" data-url="${esc(url)}">\n` +
+    `                    <img src="${esc(img)}" alt="${esc(title)}">\n` +
+    `                    <div class="game-info">\n` +
+    `                        <h3>${esc(title)}</h3>\n` +
+    `                    </div>\n` +
+    `                </div>`;
+
+  function editBlock(b, { title, url, img }) {
+    return b
+      .replace(/(data-url=")[^"]*(")/, (m, a, z) => a + esc(url) + z)
+      .replace(/(<img[^>]*?\ssrc=")[^"]*(")/, (m, a, z) => a + esc(img) + z)
+      .replace(/(<img[^>]*?\salt=")[^"]*(")/, (m, a, z) => a + esc(title) + z)
+      .replace(/(<h3>)[\s\S]*?(<\/h3>)/, (m, a, z) => a + esc(title) + z);
+  }
+
+  function findCard(cards) {
+    const c = cards.find((x) => x.url === selected.url && x.title === selected.title) || cards.find((x) => x.url === selected.url);
+    if (!c) throw new Error('That game is no longer on the homepage. Reload the list and try again.');
+    return c;
+  }
+
+  const wrapper = (u, title) => `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>${esc(title || "Yoshi's")}</title>
+  <link rel="icon" type="image/x-icon" href="favicon.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: black;
+      overflow: hidden;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+
+<iframe
+  src="${esc(u)}"
+  allow="fullscreen; autoplay; gamepad">
+</iframe>
+
+</body>
+</html>
+`;
+
+  /* ---------- planning (used by preview and submit) ---------- */
+  function plan() {
+    const p = {
+      title: $('gameName').value.trim(),
+      file: $('htmlFile').files[0],
+      link: normalizeLink($('gameLink').value),
+      imgF: $('imageFile').files[0],
+      imgU: $('imageUrl').value.trim(),
+    };
+    p.uploadImg = !p.imgU && !!p.imgF;
+    if (mode === 'add') {
+      p.slug = slugify(p.title) || 'new-game';
+      p.htmlPath = `games/${p.slug}.html`;
+      p.dataUrl = p.htmlPath;
+      p.imgSrc = p.imgU || `images/${p.slug}${p.imgF ? ext(p.imgF.name) : '.png'}`;
+    } else if (selected) {
+      const local = isLocalGame(selected.url);
+      p.slug = local ? selected.url.replace(/^games\//, '').replace(/\.html?$/i, '') : slugify(p.title || selected.title) || 'game';
+      p.htmlPath = local ? selected.url : p.file ? `games/${p.slug}.html` : null;
+      p.dataUrl = local ? selected.url : p.file ? p.htmlPath : p.link || selected.url;
+      p.imgSrc = p.imgU || (p.imgF ? `images/${p.slug}${ext(p.imgF.name)}` : selected.img);
+    }
+    return p;
+  }
+
+  function updatePreview() {
+    const p = plan();
+    let h, i;
+    if (mode === 'add') {
+      h = p.htmlPath;
+      i = p.imgSrc;
+    } else if (!selected) {
+      h = i = 'Pick a game first';
+    } else if (mode === 'change') {
+      h = (p.htmlPath || p.dataUrl) + (p.file || p.link ? ' (updated)' : ' (unchanged)');
+      i = p.imgSrc + (p.imgF || p.imgU ? ' (updated)' : ' (unchanged)');
+    } else {
+      const del = $('deleteFiles').checked;
+      h = isLocalGame(selected.url) ? selected.url + (del ? '' : ' (kept)') : 'External link, nothing to delete';
+      i = isLocalImage(selected.img) ? selected.img + (del ? '' : ' (kept)') : 'External image, nothing to delete';
+    }
+    $('htmlPathPreview').textContent = h;
+    $('imagePathPreview').textContent = i;
+  }
+
+  /* ---------- searchable dropdown ---------- */
+  const combo = $('combo');
+  const input = $('gameSearch');
+  const list = $('comboList');
+  let shown = [];
+  let active = -1;
+
+  function renderList() {
+    const q = input.value.trim().toLowerCase();
+    shown = games.filter((g) => !q || g.title.toLowerCase().includes(q) || g.url.toLowerCase().includes(q));
+    list.innerHTML = '';
+    if (!shown.length) {
+      const d = document.createElement('div');
+      d.className = 'combo-empty';
+      d.textContent = games.length ? 'No games match.' : 'No games loaded yet.';
+      list.append(d);
+      return;
+    }
+    shown.forEach((g, i) => {
+      const d = document.createElement('div');
+      d.className = 'combo-item' + (i === active ? ' active' : '');
+      d.setAttribute('role', 'option');
+      const t = document.createElement('span');
+      t.textContent = g.title;
+      const s = document.createElement('small');
+      s.textContent = isExternal(g.url) ? 'external link' : g.url;
+      d.append(t, s);
+      d.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        choose(g);
+      });
+      list.append(d);
+    });
+  }
+
+  function openList(open) {
+    combo.classList.toggle('open', open);
+    input.setAttribute('aria-expanded', String(open));
+  }
+
+  function imageUrlFor(src) {
+    if (!src) return '';
+    if (isExternal(src) || src.startsWith('data:')) return src;
+    const c = cfg();
+    return `https://raw.githubusercontent.com/${c.owner}/${c.repo}/${c.branch}/${src}`;
+  }
+
+  function choose(g) {
+    selected = g;
+    input.value = g.title;
+    openList(false);
+    $('picked').hidden = false;
+    $('pickedImg').src = imageUrlFor(g.img);
+    $('pickedTitle').textContent = g.title;
+    $('pickedUrl').textContent = g.url;
+    if (mode === 'change') $('gameName').value = g.title;
+    updatePreview();
+  }
+
+  function clearSelection() {
+    selected = null;
+    $('picked').hidden = true;
+    input.value = '';
+    if (mode === 'change') $('gameName').value = '';
+    updatePreview();
+  }
+
+  input.addEventListener('focus', () => {
+    active = -1;
+    renderList();
+    openList(true);
+  });
+  input.addEventListener('blur', () => openList(false));
+  input.addEventListener('input', () => {
+    if (selected && input.value !== selected.title) {
+      selected = null;
+      $('picked').hidden = true;
+      updatePreview();
+    }
+    active = -1;
+    renderList();
+    openList(true);
+  });
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      openList(true);
+      if (!shown.length) return;
+      active = (active + (e.key === 'ArrowDown' ? 1 : -1) + shown.length) % shown.length;
+      renderList();
+      list.children[active]?.scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const g = shown[active >= 0 ? active : shown.length === 1 ? 0 : -1];
+      if (g) choose(g);
+    } else if (e.key === 'Escape') {
+      openList(false);
+    }
+  });
+
+  /* ---------- loading the game list ---------- */
+  async function loadGames(quiet) {
+    const c = cfg();
+    if (!c.owner || !c.repo) return;
+    $('listCount').textContent = 'Loading games...';
+    try {
+      const idx = await fetchIndex();
+      games = parseCards(idx.text);
+      $('listCount').textContent = `${games.length} games loaded.`;
+      if (!quiet) setStatus(`Loaded ${games.length} games from ${c.owner}/${c.repo}.`, 'success');
+    } catch (err) {
+      games = [];
+      $('listCount').textContent = 'Could not load games.';
+      setStatus('Could not load the game list: ' + err.message, 'error');
+    }
+    renderList();
+  }
+
+  ['owner', 'repo', 'branch', 'token'].forEach((id) =>
+    $(id).addEventListener('change', () => {
+      games = [];
+      clearSelection();
+      if (mode !== 'add') loadGames();
+    })
+  );
+  $('refreshBtn').addEventListener('click', () => loadGames());
+
+  /* ---------- mode switching ---------- */
+  const TEXT = {
+    add: {
+      title: 'Add Game',
+      aside: 'What gets added:',
+      button: 'Upload to GitHub',
+      name: 'Game Name',
+      desc: 'Fill in the name, pick the game HTML file or a link, and choose a thumbnail image. The tool will create the matching files and update <code>index.html</code>.',
+    },
+    change: {
+      title: 'Change Game',
+      aside: 'What gets changed:',
+      button: 'Save Changes',
+      name: 'New Title',
+      desc: 'Pick a game, then change its title, image, or HTML file / link. Anything you leave blank stays exactly as it is.',
+    },
+    remove: {
+      title: 'Remove Game',
+      aside: 'What gets removed:',
+      button: 'Remove Game',
+      name: 'Game Name',
+      desc: 'Pick a game to remove its card from <code>index.html</code>. You can also delete its files from the repo.',
+    },
+  };
+
+  function setMode(m) {
+    mode = m;
+    form.dataset.mode = m;
+    const t = TEXT[m];
+    $('panelTitle').textContent = t.title;
+    $('asideTitle').textContent = t.aside;
+    $('gameNameLabel').textContent = t.name;
+    $('panelDesc').innerHTML = t.desc;
+    submitBtn.textContent = t.button;
+    submitBtn.classList.toggle('danger', m === 'remove');
+    ['htmlFile', 'gameLink', 'imageFile', 'imageUrl'].forEach((id) => ($(id).value = ''));
+    $('gameName').value = '';
+    if (m === 'add') clearSelection();
+    else {
+      if (m === 'change' && selected) $('gameName').value = selected.title;
+      if (!games.length) loadGames();
+    }
+    updatePreview();
+    setStatus(m === 'add' ? 'Waiting for a game name and files.' : 'Pick a game to continue.');
+  }
+
+  document.querySelectorAll('input[name="mode"]').forEach((r) => r.addEventListener('change', () => setMode(r.value)));
+  form.addEventListener('input', updatePreview);
+  form.addEventListener('change', updatePreview);
+
+  /* ---------- actions ---------- */
+  async function doAdd(p, log) {
+    if (!p.title) throw new Error('Enter a game name.');
+    if (p.file && p.link) throw new Error('Choose either an HTML file or a link, not both.');
+    if (!p.file && !p.link) throw new Error('Add a game HTML file or a game link.');
+    if (p.imgF && p.imgU) throw new Error('Choose either an image file or an image URL, not both.');
+    if (!p.imgF && !p.imgU) throw new Error('Add an image file or an image URL.');
+    if (await getFile(p.htmlPath)) throw new Error(`${p.htmlPath} already exists. Pick a different name, or use Change to edit it.`);
+
+    const msg = `Add game: ${p.title}`;
+    log(`Uploading ${p.htmlPath}...`);
+    await putFile(p.htmlPath, p.file ? await fileToB64(p.file) : textToB64(wrapper(p.link, p.title)), msg);
+    if (p.uploadImg) {
+      log(`Uploading ${p.imgSrc}...`);
+      await putFile(p.imgSrc, await fileToB64(p.imgF), msg);
+    }
+
+    log('Adding the card to index.html...');
+    const idx = await fetchIndex();
+    const cards = parseCards(idx.text);
+    if (!cards.length) throw new Error('Could not find the game grid in index.html.');
+    const last = cards[cards.length - 1];
+    const end = last.index + last.block.length;
+    const html = idx.text.slice(0, end) + '\n                ' + buildCard(p.title, p.dataUrl, p.imgSrc) + idx.text.slice(end);
+    await putFile('index.html', textToB64(html), msg, idx.sha);
+  }
+
+  async function doChange(p, log) {
+    if (!selected) throw new Error('Pick a game to change.');
+    if (!p.title) throw new Error('The title cannot be empty.');
+    if (p.file && p.link) throw new Error('Choose either an HTML file or a link, not both.');
+    if (p.imgF && p.imgU) throw new Error('Choose either an image file or an image URL, not both.');
+    if (p.title === selected.title && !p.file && !p.link && !p.imgF && !p.imgU) throw new Error('Nothing to change yet.');
+
+    const msg = `Update game: ${selected.title}`;
+    if (p.file) {
+      log(`Uploading ${p.htmlPath}...`);
+      await putFile(p.htmlPath, await fileToB64(p.file), msg);
+    } else if (p.link && isLocalGame(selected.url)) {
+      log(`Rewriting ${p.htmlPath} with the new link...`);
+      await putFile(p.htmlPath, textToB64(wrapper(p.link, p.title)), msg);
+    }
+    if (p.uploadImg) {
+      log(`Uploading ${p.imgSrc}...`);
+      await putFile(p.imgSrc, await fileToB64(p.imgF), msg);
+    }
+
+    log('Updating index.html...');
+    const idx = await fetchIndex();
+    const cards = parseCards(idx.text);
+    const c = findCard(cards);
+    const block = editBlock(c.block, { title: p.title, url: p.dataUrl, img: p.imgSrc });
+    const html = idx.text.slice(0, c.index) + block + idx.text.slice(c.index + c.block.length);
+    await putFile('index.html', textToB64(html), msg, idx.sha);
+
+    if (p.imgSrc !== selected.img && isLocalImage(selected.img) && !cards.some((o) => o !== c && o.img === selected.img)) {
+      try {
+        await removeFile(selected.img, `Remove old image for ${selected.title}`, log);
+      } catch (err) {
+        log(`Could not delete the old image (${err.message}). It is harmless to leave.`);
+      }
+    }
+  }
+
+  async function doRemove(p, log) {
+    if (!selected) throw new Error('Pick a game to remove.');
+    if (!confirm(`Remove "${selected.title}" from the site? This cannot be undone from this page.`)) throw new Error('Cancelled. Nothing was changed.');
+
+    const msg = `Remove game: ${selected.title}`;
+    log('Removing the card from index.html...');
+    const idx = await fetchIndex();
+    const cards = parseCards(idx.text);
+    const c = findCard(cards);
+    const before = idx.text.slice(0, c.index).replace(/\s+$/, '');
+    await putFile('index.html', textToB64(before + idx.text.slice(c.index + c.block.length)), msg, idx.sha);
+
+    if (!$('deleteFiles').checked) return;
+    const others = cards.filter((o) => o !== c);
+    const targets = [];
+    if (isLocalGame(selected.url) && !others.some((o) => o.url === selected.url)) targets.push(selected.url);
+    if (isLocalImage(selected.img) && !others.some((o) => o.img === selected.img)) targets.push(selected.img);
+    for (const path of targets) {
+      try {
+        await removeFile(path, msg, log);
+      } catch (err) {
+        log(`Could not delete ${path}: ${err.message}`);
+      }
+    }
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const c = cfg();
+    const lines = [];
+    const log = (m) => {
+      lines.push(m);
+      setStatus(lines.join('\n'));
+    };
+    try {
+      if (!c.owner || !c.repo || !c.token) throw new Error('GitHub owner, repository, and token are all required.');
+      submitBtn.disabled = true;
+      await { add: doAdd, change: doChange, remove: doRemove }[mode](plan(), log);
+      const done = lines.concat('', 'Done. GitHub Pages can take a minute to show the update.').join('\n');
+      if (mode === 'add') {
+        form.reset();
+        $('owner').value = c.owner;
+        $('repo').value = c.repo;
+        $('branch').value = c.branch;
+        $('token').value = c.token;
+      } else {
+        setMode(mode);
+        clearSelection();
+        await loadGames(true);
+      }
+      updatePreview();
+      setStatus(done, 'success');
+    } catch (err) {
+      setStatus(lines.concat('Error: ' + err.message).join('\n'), 'error');
+    } finally {
+      submitBtn.disabled = false;
+    }
+  });
+
+  updatePreview();
+})();
+</script>
+</body>
+</html>
